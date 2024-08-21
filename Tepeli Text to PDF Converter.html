@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tepeli to PDF</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #download {
+            margin-top: 20px; /* Add spacing between the upload and download buttons */
+        }
+    </style>
+</head>
+<body>
+    <h1>Tepeli Text to PDF Converter</h1>
+    <input type="file" id="fileInput" accept=".tepelitext, .txt" />
+    <div id="content" style="display:none;">
+        <!-- Tepeli content will be inserted here -->
+    </div>
+    <button id="download" style="display:none;">Download PDF</button>
+
+    <script>
+        // Function to convert Tepeli text to HTML
+        function tepeliToHtml(text) {
+            const lines = text.trim().split('\n');
+            let html = '';
+
+            lines.forEach(line => {
+                if (line.startsWith('# ')) {
+                    html += `<h1>${line.substring(2)}</h1>`;
+                } else if (line.startsWith('## ')) {
+                    html += `<h2>${line.substring(3)}</h2>`;
+                } else {
+                    html += `<p>${line}</p>`;
+                }
+            });
+
+            return html;
+        }
+
+        // Handle file selection
+        document.getElementById('fileInput').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    document.getElementById('content').innerHTML = tepeliToHtml(content);
+                    document.getElementById('content').style.display = 'none'; // Hide content
+                    document.getElementById('download').style.display = 'block'; // Show download button
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Download PDF function
+        document.getElementById('download').addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            // Get the content as text
+            const content = document.getElementById('content').innerText;
+
+            // Split the text into lines that fit within the page width
+            const pageWidth = doc.internal.pageSize.getWidth() - 20; // 10 margin on each side
+            const lines = doc.splitTextToSize(content, pageWidth);
+
+            // Add the lines to the PDF
+            doc.text(lines, 10, 10); // Start at (10, 10)
+
+            // Get the uploaded file name without extension
+            const fileName = document.getElementById('fileInput').files[0].name.replace(/\.[^/.]+$/, "");
+            doc.save(`${fileName}.pdf`); // Save the PDF with the uploaded file name
+        });
+    </script>
+</body>
+</html>
